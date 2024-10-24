@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Sex {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum NodePermission {
+  EDITOR
+  VIEWER
+}
+
+enum TreePermission {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum RelationshipType {
+  PARENT
+  CHILD
+  SPOUSE
+  SIBLING
+}
+
+model User {
+  id          BigInt     @id @default(autoincrement())
+  email       String     @unique
+  passwordHash String    @map("password_hash")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at")
+  nodes       Node[]
+  nodeShares  NodeShare[]
+  treeShares  TreeShare[]
+  trees       Tree[]
+}
+
+model Node {
+  id                BigInt      @id @default(autoincrement())
+  userId            BigInt
+  firstName         String      @map("first_name")
+  lastName          String?
+  birthDate         DateTime?   @map("birth_date")
+  deathDate         DateTime?   @map("death_date")
+  sex               Sex
+  profilePictureUrl String?     @map("profile_picture_url")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @default(now()) @updatedAt @map("updated_at")
+
+  user              User        @relation(fields: [userId], references: [id])
+  nodeShares        NodeShare[]
+  treeNodes         TreeNode[]
+  relationships1    Relationship[] @relation("Node1")
+  relationships2    Relationship[] @relation("Node2")
+}
+
+model NodeShare {
+  id          BigInt         @id @default(autoincrement())
+  nodeId      BigInt
+  userId      BigInt
+  permission  NodePermission
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @default(now()) @updatedAt @map("updated_at")
+
+  node        Node            @relation(fields: [nodeId], references: [id])
+  user        User            @relation(fields: [userId], references: [id])
+}
+
+model Tree {
+  id          BigInt      @id @default(autoincrement())
+  name        String
+  description String?
+  ownerId     BigInt
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @default(now()) @updatedAt @map("updated_at")
+
+  owner       User        @relation(fields: [ownerId], references: [id])
+  treeShares  TreeShare[]
+  treeNodes   TreeNode[]
+}
+
+model TreeShare {
+  id          BigInt        @id @default(autoincrement())
+  treeId      BigInt
+  userId      BigInt
+  permission  TreePermission
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  tree        Tree          @relation(fields: [treeId], references: [id])
+  user        User          @relation(fields: [userId], references: [id])
+}
+
+model TreeNode {
+  id          BigInt     @id @default(autoincrement())
+  treeId      BigInt
+  nodeId      BigInt
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at")
+
+  tree        Tree       @relation(fields: [treeId], references: [id])
+  node        Node       @relation(fields: [nodeId], references: [id])
+}
+
+model Relationship {
+  id               BigInt           @id @default(autoincrement())
+  node1Id          BigInt
+  node2Id          BigInt
+  relationshipType RelationshipType
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at")
+
+  node1            Node             @relation("Node1", fields: [node1Id], references: [id])
+  node2            Node             @relation("Node2", fields: [node2Id], references: [id])
+}
